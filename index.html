@@ -61,7 +61,6 @@
       font-size: 1em;
     }
   </style>
-  <script src="../package/agora-rtm.js"></script>
 </head>
 <body>
   <div id="container">
@@ -80,6 +79,7 @@
       <label for="channelInput">Channel Name:</label>
       <input type="text" id="channelInput" placeholder="Enter channel name" value="testChannel">
       <button id="subscribeBtn" onclick="subscribeChannel()" disabled>Subscribe</button>
+      <button id="unsubscribeBtn" onclick="unsubscribeChannel()" disabled style="margin-left: 10px;">Unsubscribe</button>
     </div>
     <div class="row">
       <label for="messageInput">Send Message:</label>
@@ -89,125 +89,6 @@
     </div>
     <div id="textDisplay"></div>
   </div>
-  <script>
-    const { RTM } = AgoraRTM;
-    const appId = "d4b2aade700e49c2a99c99745088195a";
-    let rtm = null;
-    let channelName = "";
-    let userId = "";
-    let isLoggedIn = false;
-    let isSubscribed = false;
-
-    function setButtonStates() {
-      document.getElementById("loginBtn").disabled = isLoggedIn;
-      document.getElementById("logoutBtn").disabled = !isLoggedIn;
-      document.getElementById("subscribeBtn").disabled = !isLoggedIn || isSubscribed;
-      document.getElementById("publishBtn").disabled = !isLoggedIn;
-      document.getElementById("uidInput").disabled = isLoggedIn;
-      document.getElementById("channelInput").disabled = !isLoggedIn || isSubscribed;
-    }
-
-    async function login() {
-      userId = document.getElementById("uidInput").value.trim();
-      const token = document.getElementById("tokenInput").value.trim();
-      if (!userId) {
-        alert("Please enter a user ID.");
-        return;
-      }
-      if (!token) {
-        alert("Please enter a token.");
-        return;
-      }
-      try {
-        rtm = new RTM(appId, userId);
-        rtm.addEventListener("message", event => {
-          showMessage(event.publisher, event.message);
-        });
-        rtm.addEventListener("presence", event => {
-          if (event.eventType === "SNAPSHOT") {
-            showMessage("INFO", "I Join");
-          } else {
-            showMessage("INFO", event.publisher + " is " + event.eventType);
-          }
-        });
-        rtm.addEventListener("status", event => {
-          showMessage("INFO", JSON.stringify(event));
-        });
-        await rtm.login({ token: token });
-        isLoggedIn = true;
-        setButtonStates();
-        showMessage("SYSTEM", "Login successful as " + userId);
-      } catch (err) {
-        showMessage("SYSTEM", "Login failed: " + err);
-      }
-    }
-
-    async function subscribeChannel() {
-      channelName = document.getElementById("channelInput").value.trim();
-      if (!channelName) {
-        alert("Please enter a channel name.");
-        return;
-      }
-      try {
-        await rtm.subscribe(channelName);
-        isSubscribed = true;
-        setButtonStates();
-        showMessage("SYSTEM", "Subscribed to channel: " + channelName);
-      } catch (err) {
-        showMessage("SYSTEM", "Subscribe failed: " + err);
-      }
-    }
-
-    async function publishMessage() {
-      const message = document.getElementById("messageInput").value;
-      const publishChannel = document.getElementById("publishChannelInput").value.trim();
-      if (!message) {
-        alert("Please enter a message.");
-        return;
-      }
-      if (!publishChannel) {
-        alert("Please enter a channel name to send to.");
-        return;
-      }
-      const payload = { type: "text", message: message };
-      const publishMessage = JSON.stringify(payload);
-      const publishOptions = { channelType: 'MESSAGE' };
-      try {
-        await rtm.publish(publishChannel, publishMessage, publishOptions);
-        showMessage(userId, publishMessage);
-        document.getElementById("messageInput").value = "";
-      } catch (err) {
-        showMessage("SYSTEM", "Publish failed: " + err);
-      }
-    }
-
-    function showMessage(user, msg) {
-      const textDisplay = document.getElementById("textDisplay");
-      const newText = document.createTextNode(user + ": " + msg);
-      const newLine = document.createElement("br");
-      textDisplay.appendChild(newText);
-      textDisplay.appendChild(newLine);
-      textDisplay.scrollTop = textDisplay.scrollHeight;
-    }
-
-    async function logout() {
-      if (rtm) {
-        try {
-          await rtm.logout();
-          showMessage("SYSTEM", "Logout successful.");
-        } catch (err) {
-          showMessage("SYSTEM", "Logout failed: " + err);
-        }
-      }
-      rtm = null;
-      isLoggedIn = false;
-      isSubscribed = false;
-      setButtonStates();
-    }
-
-    window.onload = () => {
-      setButtonStates();
-    };
-  </script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
